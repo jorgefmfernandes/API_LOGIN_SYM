@@ -4,9 +4,11 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use Doctrine\DBAL\Schema\View;
 use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -22,53 +24,28 @@ class UserController extends AbstractController
     public function login(Request $request, UserPasswordEncoderInterface $passEncoder) {
         $data = $request->request->all();
         $doctrine = $this->getDoctrine();
-        
-
-        // try {
-            $entityManager = $doctrine->getManager()->getRepository(User::class);
-            $userAux = $entityManager->getUserByUsername($data['username']);
-
-            $user = new User();
-            $user->setUsername($data['username']);
-
-            $storedPassword = $userAux[0]->getPassword();
-            // $passwordEncoded = $passEncoder->encodePassword($user, $data['password']);
-            $passwordEncoded = $data['password'];
-            // $passEncoder->isPasswordValid();
             
-            // return $this->passwordEncoder->isPasswordValid($user, $credentials['password']);
+        $entityManager = $doctrine->getManager()->getRepository(User::class);
+        $userAux = $entityManager->getUserByUsername($data['username']);
 
-            // return $this->json([
-            //     'storedPassword' => $storedPassword,
-            //     'passwordEncoded' => $passwordEncoded,
-            // ]);
+        $user = new User();
+        $user = $userAux['0'];
 
-            if($passEncoder->isPasswordValid($user, $data['password'])) {
-            // if($passwordEncoded == $storedPassword) {
-                return $this->json([
-                    'code' => 200,
-                    'username' => $data['username'],
-                    'password' => $passwordEncoded,
-                    'message' => 'Login efetuado com sucesso.',
-                ]);
-            } else {
-                return $this->json([
-                    'code' => 401,
-                    'username' => $data['username'],
-                    'passwordEncoded' => $passwordEncoded,
-                    'storedPassword' => $storedPassword,
-                    'message' => 'Username ou password incorretos.',
-                    'user' => $userAux
-                ]);
-            }
-        // } catch(Exception $e) {
-        //     return $this->json([
-        //         'code' => 401,
-        //         'username' => $data['username'],
-        //         'password' => $data['password'],
-        //         'message' => 'Algo de errado não está certo.',
-        //     ]);
-        // }
+        if($passEncoder->isPasswordValid($user, $data['password'])) {
+            return $this->json([
+                'code' => Response::HTTP_OK,
+                'username' => $data['username'],
+                'message' => 'Login efetuado com sucesso.',
+                'user' => $user
+            ]);
+        } else {
+            return $this->json([
+                'code' => Response::HTTP_UNAUTHORIZED,
+                'username' => $data['username'],
+                'message' => 'Username ou password incorretos.',
+                'user' => $user
+            ]);
+        }
     }
 
     /**
