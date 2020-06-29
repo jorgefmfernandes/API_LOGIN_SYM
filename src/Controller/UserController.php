@@ -19,7 +19,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 class UserController extends AbstractController
 {
     /**
-     * @Route("/login", name="login", methods={"POST"})
+     * @Route("/loginxixa", name="login", methods={"POST"})
      */
     public function login(Request $request, UserPasswordEncoderInterface $passEncoder) {
         $data = $request->request->all();
@@ -41,9 +41,7 @@ class UserController extends AbstractController
         } else {
             return $this->json([
                 'code' => Response::HTTP_UNAUTHORIZED,
-                'username' => $data['username'],
                 'message' => 'Username ou password incorretos.',
-                'user' => $user
             ]);
         }
     }
