@@ -18,8 +18,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
  */
 class UserController extends AbstractController
 {
+    // Este método de login não gera token. Serve para efeito de testes.
     /**
-     * @Route("/loginxixa", name="login", methods={"POST"})
+     * @Route("/loginSemToken", name="login", methods={"POST"})
      */
     public function login(Request $request, UserPasswordEncoderInterface $passEncoder) {
         $data = $request->request->all();
