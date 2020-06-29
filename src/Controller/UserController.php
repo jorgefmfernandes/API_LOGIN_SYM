@@ -50,11 +50,22 @@ class UserController extends AbstractController
     /**
      * @Route("/", name="getAll", methods={"get"})
      */
-    public function getAll() {
+    public function getAll(Request $request) {
         $users = $this->getDoctrine()->getRepository(User::class)->findAll();
+        // $data = $request->headers->all();
+        // $request = Request::createFromGlobals();
+
+        $data = $request->headers->all();
+
+        $token = substr($data['authorization'][0], 7);
+
+
+
 
         return $this->json([
-            'data' => $users
+            'data' => $users,
+            'authorization' => $data['authorization'],
+            'token' => $token
         ]);
     }
 
