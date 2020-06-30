@@ -2,35 +2,51 @@
 
 namespace App\Entity;
 
-use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
- * @ORM\Entity(repositoryClass=UserRepository::class)
+ * User
+ *
+ * @ORM\Table(name="user", uniqueConstraints={@ORM\UniqueConstraint(name="UNIQ_8D93D649F85E0677", columns={"username"})})
+ * @ORM\Entity
  */
 class User implements UserInterface
 {
     /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue()
-     * @ORM\Column(type="integer")
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer", nullable=false)
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="IDENTITY")
      */
     private $id;
 
     /**
-     * @ORM\Column(type="string", length=180, unique=true)
+     * @var string
+     *
+     * @ORM\Column(name="username", type="string", length=180, nullable=false)
      */
     private $username;
 
     /**
-     * @ORM\Column(type="json")
+     * @var string
+     *
+     * @ORM\Column(name="token", type="string", length=255, nullable=false)
      */
-    private $roles = [];
+    private $token;
 
     /**
-     * @var string The hashed password
-     * @ORM\Column(type="string")
+     * @var json
+     *
+     * @ORM\Column(name="roles", type="json", nullable=false)
+     */
+    private $roles;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="password", type="string", length=255, nullable=false)
      */
     private $password;
 
@@ -39,17 +55,25 @@ class User implements UserInterface
         return $this->id;
     }
 
-    // public function getUsername(): ?string
-    // {
-    //     return $this->username;
-    // }
-
     public function setUsername(string $username): self
     {
         $this->username = $username;
 
         return $this;
     }
+
+    public function getToken(): ?string
+    {
+        return $this->token;
+    }
+
+    public function setToken(string $token): self
+    {
+        $this->token = $token;
+
+        return $this;
+    }
+
 
     /**
      * A visual identifier that represents this user.
@@ -111,4 +135,6 @@ class User implements UserInterface
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
     }
+
+
 }

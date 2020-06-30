@@ -12,32 +12,50 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use ReallySimpleJWT\Token;
 
 /**
  * @Route("/user", name="user")
  */
 class UserController extends AbstractController
 {
-    // Este método de login não gera token. Serve para efeito de testes.
     /**
-     * @Route("/loginSemToken", name="login", methods={"POST"})
+     * @Route("/login", name="login", methods={"POST"})
      */
     public function login(Request $request, UserPasswordEncoderInterface $passEncoder) {
-        $data = $request->request->all();
+        $data = json_decode($request->getContent(), true);
         $doctrine = $this->getDoctrine();
-            
-        $entityManager = $doctrine->getManager()->getRepository(User::class);
-        $userAux = $entityManager->getUserByUsername($data['username']);
 
-        $user = new User();
-        $user = $userAux['0'];
+        $entityManager = $doctrine->getManager()->getRepository(User::class);
+        $user = $entityManager->findOneBy(['username' => $data['username']]);
 
         if($passEncoder->isPasswordValid($user, $data['password'])) {
+
+            $userId = $user->getId();
+            $secret = $_ENV['JWT_SECRET'];
+            $expiration = time() + 3600;
+            $issuer = $_ENV['CFG_PATH'];
+
+            $payload = [
+                'cat' => time(),                // Created At
+                'uid' => $userId,               // User Id
+                'exp' => $expiration,           // Expiracy Date
+                'iss' => $issuer                // Issuer
+            ];
+
+            $token = Token::customPayload($payload, $secret);
+
+
+
             return $this->json([
                 'code' => Response::HTTP_OK,
-                'username' => $data['username'],
+                'token' => $token,
                 'message' => 'Login efetuado com sucesso.',
-                'user' => $user
+                'user' => [
+                    'id' => $user->getId(),
+                    'username' => $user->getUsername(),
+                    'roles' => $user->getRoles(),
+                ],
             ]);
         } else {
             return $this->json([
@@ -52,20 +70,14 @@ class UserController extends AbstractController
      */
     public function getAll(Request $request) {
         $users = $this->getDoctrine()->getRepository(User::class)->findAll();
-        // $data = $request->headers->all();
-        // $request = Request::createFromGlobals();
-
         $data = $request->headers->all();
 
-        $token = substr($data['authorization'][0], 7);
-
-
-
+        $token = "xixa";
+        $refresh_token_url = $_ENV['CFG_PATH'] . '/user/token_refresh';
+        $refreshToken = $data['refresh-token'][0];
 
         return $this->json([
-            'data' => $users,
-            'authorization' => $data['authorization'],
-            'token' => $token
+            'users' => $users,
         ]);
     }
 

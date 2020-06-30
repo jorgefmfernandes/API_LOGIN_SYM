@@ -2,11 +2,11 @@
 #    path: /
 #    controller: App\Controller\DefaultController::index
 
-api_login_check:
-    path: /user/login
-    methods: ['POST']
+# api_login_check:
+#     path: /user/login
+#     methods: ['POST']
 
-gesdinet_jwt_refresh_token:
-    path: /user/token_refresh
-    controller: gesdinet.jwtrefreshtoken::refresh
-    methods: ['POST']
+# gesdinet_jwt_refresh_token:
+#     path: /user/token_refresh
+#     controller: gesdinet.jwtrefreshtoken::refresh
+#     methods: ['POST']
