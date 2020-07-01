@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\DBAL\Schema\View;
+use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,6 +20,13 @@ use ReallySimpleJWT\Token;
  */
 class UserController extends AbstractController
 {
+
+    private $entityManager;
+
+    public function __construct(EntityManagerInterface $entityManager) {
+        $this->entityManager = $entityManager;
+    }
+
     /**
      * @Route("/login", name="login", methods={"POST"})
      */
@@ -26,10 +34,17 @@ class UserController extends AbstractController
         $data = json_decode($request->getContent(), true);
         $doctrine = $this->getDoctrine();
 
-        $entityManager = $doctrine->getManager()->getRepository(User::class);
-        $user = $entityManager->findOneBy(['username' => $data['username']]);
+        // request->request->get('username');
+        // passar o body do json para aqui
+        // dd($request->request->get('username'));
 
-        if($passEncoder->isPasswordValid($user, $data['password'])) {
+        $entityManager = $doctrine->getManager()->getRepository(User::class);
+        $user = $entityManager->findOneBy(['username' => $request->request->get('username')]);
+
+        // var_dump($user);
+        // die();
+
+        if($user && $passEncoder->isPasswordValid($user, $request->request->get('password'))) {
 
             $userId = $user->getId();
             $secret = $_ENV['JWT_SECRET'];
@@ -44,8 +59,10 @@ class UserController extends AbstractController
             ];
 
             $token = Token::customPayload($payload, $secret);
-
-
+            $user->setToken($token);
+    
+            $this->entityManager->persist($user);
+            $this->entityManager->flush();
 
             return $this->json([
                 'code' => Response::HTTP_OK,
@@ -70,11 +87,6 @@ class UserController extends AbstractController
      */
     public function getAll(Request $request) {
         $users = $this->getDoctrine()->getRepository(User::class)->findAll();
-        $data = $request->headers->all();
-
-        $token = "xixa";
-        $refresh_token_url = $_ENV['CFG_PATH'] . '/user/token_refresh';
-        $refreshToken = $data['refresh-token'][0];
 
         return $this->json([
             'users' => $users,

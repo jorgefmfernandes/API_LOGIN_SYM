@@ -15,20 +15,24 @@ security:
             pattern:  ^/login
             stateless: true
             anonymous: true
-            guard:
-                authenticators:
-                    - App\Security\UserAuthenticator
-            logout:
-                path: app_logout
+        logout:
+            pattern:  ^/logout
+            stateless: true
+            anonymous: true
+            # path: app_logout
         main:
             anonymous: true
             lazy: true
             provider: app_user_provider
+            guard:
+                authenticators:
+                    - App\Security\UserAuthenticator
 
 
     access_control:
         - { path: ^/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }
-        - { path: ^/user/token_refresh, roles: IS_AUTHENTICATED_ANONYMOUSLY }
+        - { path: ^/user/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }
         - { path: ^/, roles: IS_AUTHENTICATED_FULLY }
+        # - { path: ^/, roles: ROLE_USER }
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
