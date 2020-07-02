@@ -14,55 +14,41 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use ReallySimpleJWT\Token;
+use Symfony\Component\HttpFoundation\RequestStack;
+use TokenClass;
 
 /**
  * @Route("/user", name="user")
  */
-class UserController extends AbstractController
-{
+class UserController extends AbstractController {
 
     private $entityManager;
+    private $token;
+    private $request;
 
-    public function __construct(EntityManagerInterface $entityManager) {
+    public function __construct(EntityManagerInterface $entityManager, RequestStack $request) {
         $this->entityManager = $entityManager;
+
+        $this->request = $request->getCurrentRequest();
+        $authorization = $this->request->headers->get('authorization');
+        $token = new TokenClass($this->entityManager);
+        $token = $token->verificaTokenByAuthorization($authorization);
+        $this->token = $token;
     }
 
     /**
-     * @Route("/login", name="login", methods={"POST"})
+     * @Route("/login", name="app_login", methods={"POST"})
      */
     public function login(Request $request, UserPasswordEncoderInterface $passEncoder) {
-        $data = json_decode($request->getContent(), true);
-        $doctrine = $this->getDoctrine();
-
-        // request->request->get('username');
-        // passar o body do json para aqui
-        // dd($request->request->get('username'));
-
-        $entityManager = $doctrine->getManager()->getRepository(User::class);
+        $entityManager = $this->getDoctrine()->getManager()->getRepository(User::class);
         $user = $entityManager->findOneBy(['username' => $request->request->get('username')]);
 
         // var_dump($user);
         // die();
 
         if($user && $passEncoder->isPasswordValid($user, $request->request->get('password'))) {
-
-            $userId = $user->getId();
-            $secret = $_ENV['JWT_SECRET'];
-            $expiration = time() + 3600;
-            $issuer = $_ENV['CFG_PATH'];
-
-            $payload = [
-                'cat' => time(),                // Created At
-                'uid' => $userId,               // User Id
-                'exp' => $expiration,           // Expiracy Date
-                'iss' => $issuer                // Issuer
-            ];
-
-            $token = Token::customPayload($payload, $secret);
-            $user->setToken($token);
-    
-            $this->entityManager->persist($user);
-            $this->entityManager->flush();
+            $token = new TokenClass($this->entityManager);
+            $token = $token->criaToken($user);
 
             return $this->json([
                 'code' => Response::HTTP_OK,
@@ -86,15 +72,19 @@ class UserController extends AbstractController
      * @Route("/", name="getAll", methods={"get"})
      */
     public function getAll(Request $request) {
-        $users = $this->getDoctrine()->getRepository(User::class)->findAll();
+        $users = $this->getDoctrine()->getRepository(User::class)->getAllUsers();
 
         return $this->json([
-            'users' => $users,
+            'code' => Response::HTTP_OK,
+            'token' => $this->token,
+            'data' => [
+                'users' => $users,
+            ]
         ]);
     }
 
     /**
-     * @Route("/", name="create", methods={"POST"})
+     * @Route("/create", name="create", methods={"POST"})
      */
     public  function create(Request $request, UserPasswordEncoderInterface $passwordEncoder) {
         $data = $request->request->all();
