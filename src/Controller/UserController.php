@@ -43,9 +43,6 @@ class UserController extends AbstractController {
         $entityManager = $this->getDoctrine()->getManager()->getRepository(User::class);
         $user = $entityManager->findOneBy(['username' => $request->request->get('username')]);
 
-        // var_dump($user);
-        // die();
-
         if($user && $passEncoder->isPasswordValid($user, $request->request->get('password'))) {
             $token = new TokenClass($this->entityManager);
             $token = $token->criaToken($user);
@@ -73,6 +70,12 @@ class UserController extends AbstractController {
      */
     public function getAll(Request $request) {
         $users = $this->getDoctrine()->getRepository(User::class)->getAllUsers();
+        
+        // $users = $this->getDoctrine()->getRepository(User::class)->findBy([], ['username' => 'ASC'], 5, 1);
+        // foreach($users as $user) {
+        //     unset($user['password']);
+        // }
+
 
         return $this->json([
             'code' => Response::HTTP_OK,
@@ -88,17 +91,25 @@ class UserController extends AbstractController {
      */
     public  function create(Request $request, UserPasswordEncoderInterface $passwordEncoder) {
         $data = $request->request->all();
+        $username = $request->request->get('username');
+        $password = $request->request->get('password');
+
+        // dd($this->request);
 
         $user = new User();
-        $user->setUsername($data['username']);
-        $user->setPassword($passwordEncoder->encodePassword($user, $data['password']));
+        $user->setUsername($username);
+        $user->setPassword($passwordEncoder->encodePassword($user, $password));
+        $user->setRoles(['ROLE_USER']);
 
         $doctrine = $this->getDoctrine()->getManager();
         $doctrine->persist($user);
         $doctrine->flush();
 
         return $this->json([
-            'data' => 'User criado com sucesso'
+            'username' => $username,
+            'password' => $password,
+            'token' => $this->token,
+            'message' => 'User criado com sucesso'
         ]);
     }
 

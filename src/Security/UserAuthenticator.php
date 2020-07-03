@@ -59,8 +59,13 @@ class UserAuthenticator extends AbstractGuardAuthenticator
         if($authorization) {
             $token = explode(" ", $authorization);
             $token = $token[1];
+
+            $credentials = [
+                "token" => $token,
+                "request" => $request
+            ];
     
-            return $token;
+            return $credentials;
 
         } else {
             throw new CustomUserMessageAuthenticationException('Nenhum token enviado.');
@@ -70,17 +75,17 @@ class UserAuthenticator extends AbstractGuardAuthenticator
 
     public function getUser($credentials, UserProviderInterface $userProvider) {
 
-        if($credentials == null) {
+        if($credentials['token'] == null) {
             return null;
         }
 
-        $user = $this->entityManager->getRepository(User::class)->findOneBy(['token' => $credentials]);
+        $user = $this->entityManager->getRepository(User::class)->findOneBy(['token' => $credentials['token']]);
         
         if(!$user) {
             throw new CustomUserMessageAuthenticationException('Token Inválido.');
         }
 
-        $payload = Token::getPayload($credentials, $_ENV['JWT_SECRET']);
+        $payload = Token::getPayload($credentials['token'], $_ENV['JWT_SECRET']);
         $expiracyDate = $payload['exp'];
 
         $dateDiff = $expiracyDate - time();
