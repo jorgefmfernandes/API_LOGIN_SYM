@@ -89,7 +89,7 @@ class UserController extends AbstractController {
     /**
      * @Route("/create", name="create", methods={"POST"})
      */
-    public  function create(Request $request, UserPasswordEncoderInterface $passwordEncoder) {
+    public function create(Request $request, UserPasswordEncoderInterface $passwordEncoder) {
         $data = $request->request->all();
         $username = $request->request->get('username');
         $password = $request->request->get('password');
