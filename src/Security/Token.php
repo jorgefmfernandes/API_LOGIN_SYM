@@ -47,6 +47,23 @@ class TokenClass {
         }
     }
 
+    public static function getUserIdByAuthorization($authorization) {
+        // Retorna o userId pelo header "authorization"
+
+        try {
+            $token = explode(" ", $authorization);
+            $token = $token[1];
+    
+            $payload = Token::getPayload($token, $_ENV['JWT_SECRET']);
+            $userId = $payload['uid'];
+    
+            return $userId;
+
+        } catch (CustomUserMessageAuthenticationException $e) {
+            throw new CustomUserMessageAuthenticationException('Token Inválido.');
+        }
+    }
+
     public function criaToken(User $user) {
         $issuer = $_ENV['CFG_PATH'];
         $secret = $_ENV['JWT_SECRET'];
