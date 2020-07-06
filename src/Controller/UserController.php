@@ -14,6 +14,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use ReallySimpleJWT\Token;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 use TokenClass;
 
@@ -48,7 +49,6 @@ class UserController extends AbstractController {
             $token = $token->criaToken($user);
 
             return $this->json([
-                'code' => Response::HTTP_OK,
                 'token' => $token,
                 'message' => 'Login efetuado com sucesso.',
                 'user' => [
@@ -56,12 +56,11 @@ class UserController extends AbstractController {
                     'username' => $user->getUsername(),
                     'roles' => $user->getRoles(),
                 ],
-            ]);
+            ], Response::HTTP_OK);
         } else {
             return $this->json([
-                'code' => Response::HTTP_UNAUTHORIZED,
                 'message' => 'Username ou password incorretos.',
-            ]);
+            ], Response::HTTP_UNAUTHORIZED);
         }
     }
 
@@ -69,48 +68,63 @@ class UserController extends AbstractController {
      * @Route("/", name="getAll", methods={"get"})
      */
     public function getAll(Request $request) {
-        $users = $this->getDoctrine()->getRepository(User::class)->getAllUsers();
-        
-        // $users = $this->getDoctrine()->getRepository(User::class)->findBy([], ['username' => 'ASC'], 5, 1);
-        // foreach($users as $user) {
-        //     unset($user['password']);
-        // }
-
-
-        return $this->json([
-            'code' => Response::HTTP_OK,
-            'token' => $this->token,
-            'data' => [
-                'users' => $users,
-            ]
-        ]);
+        try {
+            $users = $this->getDoctrine()->getRepository(User::class)->getAllUsers();
+            // $users = $this->getDoctrine()->getRepository(User::class)->findBy([], ['username' => 'ASC'], 5, 1);
+            // foreach($users as $user) {
+            //     unset($user['password']);
+            // }
+    
+            return $this->json([
+                'success' => true,
+                'token' => $this->token,
+                'data' => [
+                    'users' => $users,
+                ]
+            ], Response::HTTP_OK);
+        } catch(Exception $e) {
+            return $this->json([
+                'success' => false,
+                'token' => $this->token,
+            ], Response::HTTP_BAD_REQUEST);
+        }
     }
 
     /**
      * @Route("/create", name="create", methods={"POST"})
      */
     public function create(Request $request, UserPasswordEncoderInterface $passwordEncoder) {
-        $data = $request->request->all();
-        $username = $request->request->get('username');
-        $password = $request->request->get('password');
+        try {
+            $data = $request->request->all();
+            $username = $request->request->get('username');
+            $password = $request->request->get('password');
+    
+            // dd($this->request);
+    
+            $user = new User();
+            $user->setUsername($username);
+            $user->setPassword($passwordEncoder->encodePassword($user, $password));
+            $user->setRoles(['ROLE_USER']);
+    
+            $doctrine = $this->getDoctrine()->getManager();
+            $doctrine->persist($user);
+            $doctrine->flush();
+    
+            return $this->json([
+                'success' => true,
+                'username' => $username,
+                'token' => $this->token,
+                'message' => 'User criado com sucesso'
+            ], Response::HTTP_CREATED);
 
-        // dd($this->request);
-
-        $user = new User();
-        $user->setUsername($username);
-        $user->setPassword($passwordEncoder->encodePassword($user, $password));
-        $user->setRoles(['ROLE_USER']);
-
-        $doctrine = $this->getDoctrine()->getManager();
-        $doctrine->persist($user);
-        $doctrine->flush();
-
-        return $this->json([
-            'username' => $username,
-            'password' => $password,
-            'token' => $this->token,
-            'message' => 'User criado com sucesso'
-        ]);
+        } catch(Exception $e) {
+            return $this->json([
+                'success' => false,
+                'token' => $this->token,
+                'message' => 'Erro ao criar user'
+            ], Response::HTTP_BAD_REQUEST);
+            // return new JsonResponse(["token" => $this->token], Response::HTTP_BAD_REQUEST);
+        }
     }
 
     /** @var EncoderFactoryInterface */
